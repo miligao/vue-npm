@@ -17,6 +17,11 @@ import Popover from 'vue-popover'
 >
   <a href="javascript:;" slot="reference">删除</a>
 </Popover>
+
+<Popover>
+  <img src="../assets/logo.png">
+  <a href="javascript:;" slot="reference">查看</a>
+</Popover>
 ```
 
 ### Attribute
