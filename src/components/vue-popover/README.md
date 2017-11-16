@@ -32,7 +32,7 @@ import Popover from 'vue-popover'
  参数 | 说明
  -----|-----
  reference | 触发 Popover 显示的 HTML 元素
- * | Popover 内嵌 HTML 文本
+ ~ | Popover 内嵌 HTML 文本
 
 ### Events
  事件名称 | 说明 | 回调参数
