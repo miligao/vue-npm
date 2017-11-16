@@ -1,0 +1,15 @@
+{
+  "name": "vue-popover",
+  "version": "1.0.0",
+  "description": "气泡卡片",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "vue",
+    "popover"
+  ],
+  "author": "MiliGao",
+  "license": "MIT"
+}
