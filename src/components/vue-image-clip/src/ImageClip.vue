@@ -1,12 +1,12 @@
 <!--
-  - Created by Mili on 2017/8/15
+  - Created by MiliGao on 2017/8/15
  -->
 
 <template lang="html">
   <div class="imageClip">
-    <div class="imgSourceBox" ref="imgDragBox" @mousedown.prevent="imgDragStart">
+    <div class="imgSourceBox" :style="{ width: `${maskWidth}px`, height: `${maskHeight}px`}" ref="imgDragBox" @mousedown.prevent="imgDragStart">
       <img class="imgSource" :style="imgSourceStyle" ref="image">
-      <canvas ref="canvas" width="600" height="400"></canvas>
+      <canvas ref="canvas" :width="maskWidth" :height="maskHeight"></canvas>
       <canvas ref="clipCvs" :width="clipSize" :height="clipSize"></canvas>
     </div>
     <div class="handleBox">
@@ -24,10 +24,12 @@
         <div class="plus"></div>
       </div>
     </div>
-    <div class="clipHandle">
-      <button @click="clipClick">确定</button>
-      <button @click="cancel">取消</button>
-    </div>
+    <slot name="footer">
+      <div class="clipHandle">
+        <button @click="confirm">确定</button>
+        <button @click="cancel">取消</button>
+      </div>
+    </slot>
   </div>
 </template>
 
@@ -35,7 +37,19 @@
   export default {
     name: 'imageClip',
     props: {
-      imgSrc: String
+      imgSrc: String,
+      maskWidth: {
+        type: Number,
+        default: 600
+      },
+      maskHeight: {
+        type: Number,
+        default: 400
+      },
+      clipSize: {   // 裁剪尺寸
+        type: Number,
+        default: 360
+      }
     },
     data () {
       return {
@@ -46,9 +60,7 @@
         sliderPre: 0.5,   // slider百分比50%
         sliderPos: 0,   // slider滑动到的新位置
         sliderStartX: 0,   // slider开始滑动的位置
-        sliderMaxX: 480,   // slider的总长
-        sliderDragging: false,   // slider是否拖拽
-        clipSize: 340,   // 裁剪尺寸
+        sliderDragging: false,   // slider是否正在拖拽
         zoomRatio: 1,   // 缩放比率
         imgStartXY: {   // img开始移动的位置
           x: 0,
@@ -65,9 +77,15 @@
       }
     },
     computed: {
+      // slider的总长
+      sliderMaxX () {
+        return this.maskWidth - 120
+      },
+
       sliderBoxStyle: function () {
         let pre = this.sliderPre * 100
         return {
+          width: this.sliderMaxX + 'px',
           background: `linear-gradient(90deg, #4db3ff ${pre}%, #F1F6FA ${pre}%)`
         }
       },
@@ -99,8 +117,7 @@
       }
     },
     mounted () {
-      this.sliderMaxX = this.$refs.sliderBox.offsetWidth   // slider的总长
-      this.sliderPos = this.sliderMaxX * this.sliderPre  // slider滑动到的初始位置
+      this.sliderPos = this.sliderMaxX * this.sliderPre  // slider滑块初始位置
       this.initCanvas()
     },
     methods: {
@@ -204,7 +221,7 @@
         ctx.fill()
       },
 
-      clipClick () {
+      confirm () {
         let clipCvs = this.$refs.clipCvs
         let ctx = clipCvs.getContext('2d')
         let image = this.$refs.image
@@ -234,7 +251,7 @@
           ia[i] = bytes.charCodeAt(i)
         }
         let blob = new Blob([ab], { type: 'image/png' })
-        this.$emit('success', blob)
+        this.$emit('onOk', blob)
       },
 
       cancel () {
@@ -242,23 +259,17 @@
         ctx.restore()
         ctx.clearRect(0, 0, this.clipSize, this.clipSize)
         this.$refs.image.src = null
-        this.$emit('cancel')
+        this.$emit('onCancel')
       }
     }
   }
 </script>
 
 <style scoped>
-  .imageClip {
-    width: 600px;
-  }
-
   .imgSourceBox {
-    width: 100%;
-    height: 400px;
-    overflow: hidden;
     background: #fff;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     cursor: grab;
@@ -336,7 +347,6 @@
   }
 
   .sliderBox {
-    width: 480px;
     height: 6px;
     border-radius: 8px;
     position: relative;

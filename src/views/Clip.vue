@@ -8,10 +8,15 @@
     <div class="container">
       <div class="clipBox">
         <ImageClip
+          ref="imgClip"
           :imgSrc="imgSrc"
-          @success="success"
-          @cancel="cancel"
-        />
+          @onOk="success"
+          @onCancel="cancel"
+        >
+          <div slot="footer">
+            <button @click="test">test</button>
+          </div>
+        </ImageClip>
       </div>
       <img ref="clipSrc" class="clipSrc">
     </div>
@@ -56,7 +61,11 @@
       },
 
       cancel () {
-        this.imgSrc = null
+        console.log('cancel')
+      },
+
+      test () {
+        this.$refs.imgClip.confirm()
       }
     }
   }
@@ -71,13 +80,12 @@
 
   .clipBox {
     border: 1px solid #e4e4e4;
-    width: 600px;
     padding: 40px;
   }
 
   .clipSrc {
-    width: 340px;
-    height: 340px;
+    width: 360px;
+    height: 360px;
     border: 1px solid #e4e4e4;
   }
 </style>
