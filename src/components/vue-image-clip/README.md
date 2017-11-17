@@ -15,13 +15,9 @@ Vue.use(ImageClip)
 ```
 
 ```javascript
-<template>
-  <ImageClip ref="imgClip" :imgSrc="imgSrc">
-</template>
-
-<script>
-  this.$refs.imgClip.confirm()
-</script>
+<ImageClip ref="imgClip" :imgSrc="imgSrc">
+~~~~
+this.$refs.imgClip.confirm()
 ```
 
 ### Attributes
