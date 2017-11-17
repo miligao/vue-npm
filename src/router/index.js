@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Index from '../views/Index'
 import Transfer from '../views/Transfer'
 import Popover from '../views/Popover'
+import Clip from '../views/Clip.vue'
 
 Vue.use(Router)
 
@@ -22,6 +23,11 @@ export default new Router({
       path: '/popover',
       name: 'Popover',
       component: Popover
+    },
+    {
+      path: '/clip',
+      name: 'Clip',
+      component: Clip
     }
   ]
 })
