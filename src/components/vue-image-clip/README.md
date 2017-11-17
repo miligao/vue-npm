@@ -15,8 +15,8 @@ Vue.use(ImageClip)
 ```
 
 ```javascript
-<ImageClip ref="imgClip" :imgSrc="imgSrc">
-~~~~
+<ImageClip ref="imgClip" :imgSrc="imgSrc" />
+// 手动调用
 this.$refs.imgClip.confirm()
 ```
 
