@@ -14,6 +14,16 @@ import ImageClip from 'vue-image-clip'
 Vue.use(ImageClip)
 ```
 
+```javascript
+<template>
+  <ImageClip ref="imgClip" :imgSrc="imgSrc">
+</template>
+
+<script>
+  this.$refs.imgClip.confirm()
+</script>
+```
+
 ### Attributes
  参数 | 说明 | 类型 | 可选值 | 默认值
  -----|-----|-----|-----|-----
@@ -31,5 +41,5 @@ Vue.use(ImageClip)
 ### Methods
  事件名称 | 说明 | 参数
  -----|-----|-----
- confirm | 确定裁切 | -
- cancel | 取消裁切 | -
+ confirm | 手动确定裁切 | -
+ cancel | 手动取消裁切 | -
