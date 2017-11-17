@@ -16,7 +16,7 @@ Vue.use(ImageClip)
 
 ```javascript
 // 手动调用
-this.$refs.mageClip.confirm()
+this.$refs.imageClip.confirm()
 ```
 
 ### Attributes
