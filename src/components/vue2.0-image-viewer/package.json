@@ -1,0 +1,16 @@
+{
+  "name": "vue2.0-image-viewer",
+  "version": "1.0.0",
+  "description": "vue图片查看器",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "vue",
+    "image",
+    "viewer"
+  ],
+  "author": "MiliGao",
+  "license": "MIT"
+}

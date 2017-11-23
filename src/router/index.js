@@ -4,6 +4,7 @@ import Index from '../views/Index'
 import Transfer from '../views/Transfer'
 import Popover from '../views/Popover'
 import Clip from '../views/Clip.vue'
+import ImageViewer from '../views/ImageViewer'
 
 Vue.use(Router)
 
@@ -28,6 +29,11 @@ export default new Router({
       path: '/clip',
       name: 'Clip',
       component: Clip
+    },
+    {
+      path: '/viewer',
+      name: 'ImageViewer',
+      component: ImageViewer
     }
   ]
 })
