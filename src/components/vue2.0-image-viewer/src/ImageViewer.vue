@@ -6,23 +6,22 @@
   <transition name="imageViewer">
     <section class="imageViewerMask" v-if="visible">
       <div class="imageViewerLayer">
-        <div class="imageViewer">
-          <transition :name="listName">
-            <div class="imageContainer" :key="'imageBox' + currentIndex">
-              <img
-                :style="imageStyle"
-                :src="images[currentIndex]"
-                :class="['image', { draging: imageIsDraging }]"
-                @mousedown.prevent="imageMousedown"
-                ref="image"
-                alt="图片"
-              />
-            </div>
-          </transition>
-        </div>
+        <transition :name="listName">
+          <div class="imageContainer" :key="'imageBox' + currentIndex" ref="imageContainer">
+            <img
+              :style="imageStyle"
+              :src="images[currentIndex]"
+              :class="['image', { draging: imageIsDraging }]"
+              @mousedown.prevent="imageMousedown"
+              ref="image"
+              alt="图片"
+            />
+          </div>
+        </transition>
+        <div class="zoomPercent" v-show="showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
         <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
         <div class="handleBar">
-          <div class="button" @click="zoomAuto" title="原始大小"><img src="./assets/zoom_auto.png" alt="自适应"></div>
+          <div class="button" @click="zoomAuto"><img :src="imageStatus === 'natural' ? require('./assets/zoom_adapt.png') : require('./assets/zoom_auto.png')" alt="自适应"></div>
           <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
           <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
           <div class="button prev" @click="prev"><div class="arrow"></div></div>
@@ -38,7 +37,7 @@
 </template>
 
 <script>
-  let zoomRatio = 0.025   // 缩放比率
+  let zoomRatio = 0.02   // 缩放比率
 
   export default {
     name: 'imageViewer',
@@ -60,10 +59,9 @@
         rotate: 0,
         imageIsDraging: false,
         listName: 'list-init',
-        initImgSize: {
-          w: 0,
-          h: 0
-        },
+        imageTransition: 'transform .2s',
+        imageStatus: 'natural',   // natural/adapt
+        showZoomPercent: false,
         mouseDown: {
           x: 0,
           y: 0
@@ -81,7 +79,8 @@
     computed: {
       imageStyle () {
         return {
-          transform: `translate(${this.mouseDrag.x}px, ${this.mouseDrag.y}px) scale(${this.zoom}) rotate(${this.rotate}deg)`
+          transform: `translate(${this.mouseDrag.x}px, ${this.mouseDrag.y}px) scale(${this.zoom}) rotate(${this.rotate}deg)`,
+          transition: this.imageTransition
         }
       }
     },
@@ -90,6 +89,7 @@
         // 初始化参数
         this.zoom = 1
         this.rotate = 0
+        this.imageStatus = 'natural'
         this.mouseDown.x = 0
         this.mouseDown.y = 0
         this.mouseUp.x = 0
@@ -120,6 +120,14 @@
           window.onmousewheel = null
           document.onmousewheel = null
         }
+      },
+
+      zoom () {
+        if (this.showZoomPercent) return
+        this.showZoomPercent = true
+        setTimeout(() => {
+          this.showZoomPercent = false
+        }, 1000)
       }
     },
     mounted () {
@@ -130,9 +138,7 @@
       loadImage () {
         this.images.map((ele, index) => {
           let img = new Image()
-          img.onload = (e) => {
-            console.log(e, index)
-          }
+          img.onload = (e) => {}
           img.src = ele
         })
       },
@@ -150,6 +156,7 @@
       },
 
       imageMousedown (e) {
+        this.imageTransition = 'none'
         this.mouseDown.x = e.clientX
         this.mouseDown.y = e.clientY
         this.imageIsDraging = true
@@ -171,6 +178,7 @@
         this.mouseUp.x = this.mouseDrag.x
         this.mouseUp.y = this.mouseDrag.y
         this.imageIsDraging = false
+        this.imageTransition = 'transform .2s'
       },
 
       next () {
@@ -196,10 +204,30 @@
       },
 
       zoomOut () {
-        this.zoom = this.zoom <= 0.25 ? 0.25 : this.zoom - zoomRatio
+        this.zoom = this.zoom <= 0.04 ? 0.04 : this.zoom - zoomRatio
       },
 
       zoomAuto () {
+        if (this.imageStatus === 'natural') {   // 自适应大小
+          this.imageStatus = 'adapt'
+          let { width: imgW, height: imgH } = this.$refs.image
+          let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
+          // 图片的宽高比率
+          if (imgW / imgH <= viewW / viewH) {
+            this.zoom = viewH / imgH
+          } else {
+            this.zoom = viewW / imgW
+          }
+        } else {  // 原始大小
+          this.imageStatus = 'natural'
+          this.zoom = 1
+        }
+        this.mouseDown.x = 0
+        this.mouseDown.y = 0
+        this.mouseUp.x = 0
+        this.mouseUp.y = 0
+        this.mouseDrag.x = 0
+        this.mouseDrag.y = 0
       },
 
       leftRotate () {
@@ -236,7 +264,7 @@
     position: relative;
   }
 
-  .imageViewer .imageContainer {
+  .imageContainer {
     width: 100%;
     height: 100%;
     position: absolute;
@@ -250,8 +278,7 @@
   }
 
   .imageContainer .image {
-    max-width: 80%;
-    max-height: 80%;
+    display: block;
     user-select: none;
     cursor: grab;
   }
@@ -263,7 +290,7 @@
   .handleBar {
     position: absolute;
     left: 50%;
-    bottom: 0;
+    bottom: 10px;
     transform: translateX(-50%);
     height: 50px;
     padding: 0 10px;
@@ -273,10 +300,11 @@
     align-items: center;
     justify-content: center;
     transition: .4s;
+    user-select: none;
   }
 
   .handleBar:hover {
-    background: rgba(255, 255, 255, .3);
+    background: rgba(255, 255, 255, .2);
   }
 
   .handleBar .button {
@@ -328,9 +356,23 @@
   .pointBar {
     position: absolute;
     left: 50%;
-    bottom: 50px;
+    bottom: 60px;
     transform: translateX(-50%);
     color: rgba(255, 255, 255, .5);
+    font-size: 14px;
+  }
+
+  .zoomPercent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    line-height: 30px;
+    width: 66px;
+    text-align: center;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, .5);
+    color: rgba(255, 255, 255, .9);
     font-size: 14px;
   }
 

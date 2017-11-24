@@ -12,7 +12,7 @@
     <button @click="imgViewerVisible = true">点我预览图片</button>
     <ImageViewer
       :images="images"
-      :defaultIndex="3"
+      :defaultIndex="11"
       :visible.sync="imgViewerVisible"
     >
     </ImageViewer>
@@ -40,7 +40,8 @@
           'http://www.dowebok.com/demo/192/img/thumbnails/tibet-1.jpg',
           'http://www.dowebok.com/demo/192/img/thumbnails/tibet-2.jpg',
           'http://www.dowebok.com/demo/192/img/thumbnails/tibet-3.jpg',
-          'http://www.dowebok.com/demo/192/img/thumbnails/tibet-4.jpg'
+          'http://www.dowebok.com/demo/192/img/thumbnails/tibet-4.jpg',
+          'http://imgq.duitang.com/uploads/item/201402/07/20140207162528_GLWkY.jpeg'
         ],
         imgViewerVisible: false
       }
