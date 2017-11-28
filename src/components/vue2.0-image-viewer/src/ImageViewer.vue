@@ -7,12 +7,16 @@
     <section class="imageViewerMask" v-if="visible">
       <div class="imageViewerLayer" ref="imageViewerLayer">
         <transition :name="listName">
-          <div class="imageContainer" :key="'imageBox' + currentIndex" ref="imageContainer">
+          <div
+            :class="['imageContainer', { imageFullScreen: isFullScreen }]"
+            :key="'imageBox' + currentIndex"
+            ref="imageContainer"
+            @mousedown.prevent="imageMousedown"
+          >
             <img
               :style="imageStyle"
               :src="images[currentIndex]"
-              :class="['image', { draging: imageIsDraging }]"
-              @mousedown.prevent="imageMousedown"
+              class="image"
               ref="image"
               alt="图片"
             />
@@ -55,13 +59,13 @@
     },
     data () {
       return {
-        currentIndex: 0,
+        currentIndex: -1,
         zoom: 1,
         rotate: 0,
-        imageIsDraging: false,
         listName: 'list-init',
         imageTransition: 'transform .2s',
         imageStatus: 'natural',   // natural/adapt
+        imagesSize: [],
         showZoomPercent: false,
         isFullScreen: false,
         mouseDown: {
@@ -89,14 +93,14 @@
     watch: {
       currentIndex (val) {
         if (this.isFullScreen) {
-          this.computedZoom()   // 自适应窗口
+          this.imageStatus = 'adapt'
+          this.computedZoom()
         } else {
-          // 初始化参数
           this.zoom = 1
-          this.rotate = 0
           this.imageStatus = 'natural'
-          this.initLocation()
         }
+        this.rotate = 0
+        this.initLocation()
       },
 
       visible (val) {
@@ -142,7 +146,9 @@
       loadImage () {
         this.images.map((ele, index) => {
           let img = new Image()
-          img.onload = (e) => {}
+          img.onload = (e) => {
+            this.imagesSize[index] = { w: e.target.width, h: e.target.height }
+          }
           img.src = ele
         })
       },
@@ -174,25 +180,22 @@
         this.imageTransition = 'none'
         this.mouseDown.x = e.clientX
         this.mouseDown.y = e.clientY
-        this.imageIsDraging = true
-        this.$refs.image.addEventListener('mousemove', this.imageDraging)
-        this.$refs.image.addEventListener('mouseup', this.imageDragEnd)
-        this.$refs.image.addEventListener('mouseleave', this.imageDragEnd)
+        this.$refs.imageContainer.addEventListener('mousemove', this.imageDraging)
+        this.$refs.imageContainer.addEventListener('mouseup', this.imageDragEnd)
+        this.$refs.imageContainer.addEventListener('mouseleave', this.imageDragEnd)
       },
 
       imageDraging (e) {
-        this.imageIsDraging = true
         this.mouseDrag.x = this.mouseUp.x + e.clientX - this.mouseDown.x
         this.mouseDrag.y = this.mouseUp.y + e.clientY - this.mouseDown.y
       },
 
       imageDragEnd (e) {
-        this.$refs.image.removeEventListener('mousemove', this.imageDraging)
-        this.$refs.image.removeEventListener('mouseup', this.imageDragEnd)
-        this.$refs.image.removeEventListener('mouseleave', this.imageDragEnd)
+        this.$refs.imageContainer.removeEventListener('mousemove', this.imageDraging)
+        this.$refs.imageContainer.removeEventListener('mouseup', this.imageDragEnd)
+        this.$refs.imageContainer.removeEventListener('mouseleave', this.imageDragEnd)
         this.mouseUp.x = this.mouseDrag.x
         this.mouseUp.y = this.mouseDrag.y
-        this.imageIsDraging = false
         this.imageTransition = 'transform .2s'
       },
 
@@ -240,6 +243,20 @@
         this.initLocation()
       },
 
+      computedZoom () {
+        let { w: imgW, h: imgH } = this.imagesSize[this.currentIndex]
+        let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
+        if (imgW <= viewW && imgH <= viewH) {
+          this.zoom = 1
+        } else {
+          if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比率
+            this.zoom = viewH / imgH
+          } else {
+            this.zoom = viewW / imgW
+          }
+        }
+      },
+
       leftRotate () {
         this.rotate -= 90
       },
@@ -263,7 +280,22 @@
 
       fullscreenchange () {
         this.isFullScreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement
-        console.log(this.isFullScreen)
+        if (this.isFullScreen) {
+          this.imageStatus = 'adapt'
+          this.rotate = 0
+          this.initLocation()
+          setTimeout(() => {   // DOM结构还没变化
+            this.computedZoom()
+          }, 50)
+          this.timer = setInterval(() => {
+            this.next()
+          }, 3000)
+        } else {
+          this.zoom = 1
+          this.imageStatus = 'natural'
+          window.clearInterval(this.timer)
+          this.timer = null
+        }
       }
     }
   }
@@ -297,16 +329,16 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    cursor: grab;
+  }
+
+  .imageContainer.imageFullScreen {
+    cursor: none;
   }
 
   .imageContainer .image {
     display: block;
     user-select: none;
-    cursor: grab;
-  }
-
-  .imageContainer .image.draging {
-    cursor: grabbing;
   }
 
   .handleBar {
