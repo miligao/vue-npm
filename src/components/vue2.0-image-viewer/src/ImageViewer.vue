@@ -22,6 +22,10 @@
             />
           </div>
         </transition>
+        <transition-group name="bigButton">
+            <div class="prevButton" v-show="showBigButton === 'prev'" key="bigButtonPrev" @click="prev"></div>
+            <div class="nextButton" v-show="showBigButton === 'next'" key="bigButtonNext" @click="next"></div>
+        </transition-group>
         <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
         <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
         <div class="handleBar" v-show="!isFullScreen">
@@ -66,20 +70,12 @@
         imageTransition: 'transform .2s',
         imageStatus: 'natural',   // natural/adapt
         imagesSize: [],
+        mouseDown: { x: 0, y: 0 },
+        mouseUp: { x: 0, y: 0 },
+        mouseDrag: { x: 0, y: 0 },
         showZoomPercent: false,
         isFullScreen: false,
-        mouseDown: {
-          x: 0,
-          y: 0
-        },
-        mouseUp: {
-          x: 0,
-          y: 0
-        },
-        mouseDrag: {
-          x: 0,
-          y: 0
-        }
+        showBigButton: ''
       }
     },
     computed: {
@@ -116,6 +112,10 @@
           document.addEventListener('mozfullscreenchange', this.fullscreenchange)
           document.addEventListener('webkitfullscreenchange', this.fullscreenchange)
           document.addEventListener('msfullscreenchange', this.fullscreenchange)
+          // 注册键盘事件
+          document.addEventListener('keydown', this.keydown)
+          // 注册鼠标移动事件
+          document.addEventListener('mousemove', this.mousemove)
 
           setTimeout(() => {
             this.loadImage()
@@ -130,6 +130,8 @@
           document.removeEventListener('mozfullscreenchange', this.fullscreenchange)
           document.removeEventListener('webkitfullscreenchange', this.fullscreenchange)
           document.removeEventListener('msfullscreenchange', this.fullscreenchange)
+          document.removeEventListener('keydown', this.keydown)
+          document.removeEventListener('mousemove', this.mousemove)
         }
       },
 
@@ -296,6 +298,35 @@
           window.clearInterval(this.timer)
           this.timer = null
         }
+      },
+
+      keydown (e) {
+        switch (e.keyCode) {
+          case 37: // 左
+            this.prev()
+            break
+          case 38: // 上
+            this.leftRotate()
+            break
+          case 39: // 右
+            this.next()
+            break
+          case 40: // 下
+            this.rightRotate()
+            break
+        }
+      },
+
+      mousemove (e) {
+        if (this.isFullScreen) return
+        let maxW = this.$refs.imageContainer ? this.$refs.imageContainer.offsetWidth : 1920
+        if (e.clientX <= 200) {
+          this.showBigButton = 'prev'
+        } else if (e.clientX >= maxW - 200) {
+          this.showBigButton = 'next'
+        } else {
+          this.showBigButton = ''
+        }
       }
     }
   }
@@ -416,6 +447,70 @@
     font-size: 14px;
   }
 
+  .prevButton,
+  .nextButton {
+    position: absolute;
+    top: 50%;
+    left: 2%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, .5);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 4px rgba(0, 0, 0, .5);
+  }
+
+  .nextButton {
+    left: auto;
+    right: 2%;
+  }
+
+  .nextButton::before,
+  .nextButton::after,
+  .prevButton::before,
+  .prevButton::after {
+    content: "";
+    display: block;
+    width: 3px;
+    height: 22px;
+    background: rgba(255, 255, 255, .5);
+    border-radius: 1px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, .5);
+  }
+
+  .nextButton:hover,
+  .prevButton:hover {
+    border-color: #fff;
+  }
+
+  .nextButton:hover::before,
+  .nextButton:hover::after,
+  .prevButton:hover::before,
+  .prevButton:hover::after {
+    background: #fff;
+  }
+
+  .prevButton::before {
+    transform: rotate(45deg) translateY(6px);
+  }
+
+  .prevButton::after {
+    transform: rotate(-45deg) translateY(-6px);
+  }
+
+  .nextButton::before {
+    transform: rotate(-45deg) translateY(6px);
+  }
+
+  .nextButton::after {
+    transform: rotate(45deg) translateY(-6px);
+  }
+
   .zoomPercent {
     position: absolute;
     top: 50%;
@@ -495,5 +590,18 @@
   .imageViewer-enter-active,
   .imageViewer-leave-active {
     transition: opacity .4s;
+  }
+
+  .bigButton-enter,
+  .bigButton-leave-to {
+    opacity: 0;
+  }
+
+  .bigButton-enter-active {
+    transition: opacity .5s;
+  }
+
+  .bigButton-leave-active {
+    transition: opacity 1.5s;
   }
 </style>
