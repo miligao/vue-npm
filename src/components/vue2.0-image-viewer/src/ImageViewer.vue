@@ -29,7 +29,9 @@
         <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
         <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
         <div class="handleBar" v-show="!isFullScreen">
-          <div class="button" @click="zoomAuto"><img :src="imageStatus === 'natural' ? require('./assets/zoom_adapt.png') : require('./assets/zoom_auto.png')" alt="自适应"></div>
+          <div class="button" @click="zoomAuto" :title="imageStatus === 'natural' ? '适应窗口' : '实际尺寸'">
+            <img :src="imageStatus === 'natural' ? require('./assets/zoom_adapt.png') : require('./assets/zoom_natural.png')" alt="自适应">
+          </div>
           <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
           <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
           <div class="button prev" @click="prev"><div class="arrow"></div></div>
@@ -63,7 +65,7 @@
     },
     data () {
       return {
-        currentIndex: -1,
+        currentIndex: this.defaultIndex,
         zoom: 1,
         rotate: 0,
         listName: 'list-init',
@@ -88,20 +90,12 @@
     },
     watch: {
       currentIndex (val) {
-        if (this.isFullScreen) {
-          this.imageStatus = 'adapt'
-          this.computedZoom()
-        } else {
-          this.zoom = 1
-          this.imageStatus = 'natural'
-        }
-        this.rotate = 0
-        this.initLocation()
+        this.initParms()
       },
 
       visible (val) {
         if (val) {
-          this.currentIndex = this.defaultIndex
+          this.loadImage()   // 加载全部图片
           // 注册鼠标滚轮事件
           if (document.addEventListener) {
             document.addEventListener('DOMMouseScroll', this.onMouseScroll)
@@ -116,11 +110,8 @@
           document.addEventListener('keydown', this.keydown)
           // 注册鼠标移动事件
           document.addEventListener('mousemove', this.mousemove)
-
-          setTimeout(() => {
-            this.loadImage()
-          }, 5)   // 优先加载 currentIndex 图片
         } else {
+          this.currentIndex = this.defaultIndex
           if (document.addEventListener) {
             document.removeEventListener('DOMMouseScroll', this.onMouseScroll)
           }
@@ -144,8 +135,9 @@
       }
     },
     methods: {
-      // 加载图片
       loadImage () {
+        let currentImg = new Image()
+        currentImg.src = this.images[this.currentIndex]
         this.images.map((ele, index) => {
           let img = new Image()
           img.onload = (e) => {
@@ -153,6 +145,9 @@
           }
           img.src = ele
         })
+        setTimeout(() => {
+          this.initParms()
+        }, 60)
       },
 
       onMouseScroll (e) {
@@ -166,15 +161,6 @@
         } else if (e.wheelDelta < 0 || e.detail > 0) {
           this.zoomOut()
         }
-      },
-
-      initLocation () {
-        this.mouseDown.x = 0
-        this.mouseDown.y = 0
-        this.mouseUp.x = 0
-        this.mouseUp.y = 0
-        this.mouseDrag.x = 0
-        this.mouseDrag.y = 0
       },
 
       imageMousedown (e) {
@@ -228,21 +214,35 @@
       },
 
       zoomAuto () {
-        if (this.imageStatus === 'natural') {   // 自适应大小
+        if (this.imageStatus === 'natural') {
           this.imageStatus = 'adapt'
           let { width: imgW, height: imgH } = this.$refs.image
           let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
-          // 图片的宽高比率
-          if (imgW / imgH <= viewW / viewH) {
+          if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比 和 容器宽高比
             this.zoom = viewH / imgH
           } else {
             this.zoom = viewW / imgW
           }
-        } else {  // 原始大小
+        } else {
           this.imageStatus = 'natural'
           this.zoom = 1
         }
         this.initLocation()
+      },
+
+      initParms () {
+        this.computedZoom()   // zoom
+        this.initLocation()   // location
+        this.rotate = 0   // rotate
+      },
+
+      initLocation () {
+        this.mouseDown.x = 0
+        this.mouseDown.y = 0
+        this.mouseUp.x = 0
+        this.mouseUp.y = 0
+        this.mouseDrag.x = 0
+        this.mouseDrag.y = 0
       },
 
       computedZoom () {
@@ -250,20 +250,24 @@
         let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
         if (imgW <= viewW && imgH <= viewH) {
           this.zoom = 1
+          this.imageStatus = 'natural'   // 原始尺寸
         } else {
-          if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比率
+          if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比 和 容器宽高比
             this.zoom = viewH / imgH
           } else {
             this.zoom = viewW / imgW
           }
+          this.imageStatus = 'adapt'   // 适应窗口
         }
       },
 
       leftRotate () {
+        if (this.isFullScreen) return
         this.rotate -= 90
       },
 
       rightRotate () {
+        if (this.isFullScreen) return
         this.rotate += 90
       },
 
@@ -283,33 +287,45 @@
       fullscreenchange () {
         this.isFullScreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement
         if (this.isFullScreen) {
-          this.imageStatus = 'adapt'
-          this.rotate = 0
-          this.initLocation()
-          setTimeout(() => {   // DOM结构还没变化
-            this.computedZoom()
-          }, 50)
-          this.timer = setInterval(() => {
-            this.next()
-          }, 3000)
+          setTimeout(() => {
+            this.initParms()
+          }, 60)   // 全屏事件DOM还未发生改变
+          this.setTimer()
         } else {
-          this.zoom = 1
-          this.imageStatus = 'natural'
-          window.clearInterval(this.timer)
-          this.timer = null
+          this.initParms()
+          this.clearTimer()
         }
+      },
+
+      setTimer () {
+        this.timer = setInterval(() => {
+          this.next()
+        }, 3000)
+      },
+
+      clearTimer () {
+        window.clearInterval(this.timer)
+        this.timer = null
       },
 
       keydown (e) {
         switch (e.keyCode) {
           case 37: // 左
             this.prev()
+            if (this.isFullScreen) {
+              this.clearTimer()
+              this.setTimer()
+            }
             break
           case 38: // 上
             this.leftRotate()
             break
           case 39: // 右
             this.next()
+            if (this.isFullScreen) {
+              this.clearTimer()
+              this.setTimer()
+            }
             break
           case 40: // 下
             this.rightRotate()
@@ -340,6 +356,7 @@
     bottom: 0;
     left: 0;
     z-index: 1000;
+    user-select: none;
   }
 
   .imageViewerLayer {

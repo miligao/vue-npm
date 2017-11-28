@@ -4,15 +4,11 @@
 
 <template lang="html">
   <div>
-    <p>浏览大图</p>
-    <p>浏览大图</p>
-    <p>浏览大图</p>
-    <p>浏览大图</p>
-    <p>浏览大图</p>
+    <h1>图片浏览</h1>
     <button @click="imgViewerVisible = true">点我预览图片</button>
     <ImageViewer
       :images="images"
-      :defaultIndex="0"
+      :defaultIndex="5"
       :visible.sync="imgViewerVisible"
     >
     </ImageViewer>
