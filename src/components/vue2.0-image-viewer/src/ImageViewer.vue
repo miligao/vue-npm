@@ -5,7 +5,7 @@
 <template lang="html">
   <transition name="imageViewer">
     <section class="imageViewerMask" v-if="visible">
-      <div class="imageViewerLayer">
+      <div class="imageViewerLayer" ref="imageViewerLayer">
         <transition :name="listName">
           <div class="imageContainer" :key="'imageBox' + currentIndex" ref="imageContainer">
             <img
@@ -18,9 +18,9 @@
             />
           </div>
         </transition>
-        <div class="zoomPercent" v-show="showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
+        <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
         <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
-        <div class="handleBar">
+        <div class="handleBar" v-show="!isFullScreen">
           <div class="button" @click="zoomAuto"><img :src="imageStatus === 'natural' ? require('./assets/zoom_adapt.png') : require('./assets/zoom_auto.png')" alt="自适应"></div>
           <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
           <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
@@ -28,9 +28,9 @@
           <div class="button next" @click="next"><div class="arrow"></div></div>
           <div class="button" @click="leftRotate"><img src="./assets/left_rotate.png" alt="左旋"></div>
           <div class="button" @click="rightRotate"><img src="./assets/right_rotate.png" alt="右旋"></div>
-          <div class="button"><img src="./assets/paly.png" alt="幻灯片"></div>
+          <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
         </div>
-        <div class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
+        <div v-show="!isFullScreen" class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
       </div>
     </section>
   </transition>
@@ -38,6 +38,7 @@
 
 <script>
   let zoomRatio = 0.02   // 缩放比率
+  let zoomMax = 4   // 最大放大倍数
 
   export default {
     name: 'imageViewer',
@@ -62,6 +63,7 @@
         imageTransition: 'transform .2s',
         imageStatus: 'natural',   // natural/adapt
         showZoomPercent: false,
+        isFullScreen: false,
         mouseDown: {
           x: 0,
           y: 0
@@ -86,39 +88,44 @@
     },
     watch: {
       currentIndex (val) {
-        // 初始化参数
-        this.zoom = 1
-        this.rotate = 0
-        this.imageStatus = 'natural'
-        this.mouseDown.x = 0
-        this.mouseDown.y = 0
-        this.mouseUp.x = 0
-        this.mouseUp.y = 0
-        this.mouseDrag.x = 0
-        this.mouseDrag.y = 0
-      },
-
-      defaultIndex (val) {
-        this.currentIndex = val
+        if (this.isFullScreen) {
+          this.computedZoom()   // 自适应窗口
+        } else {
+          // 初始化参数
+          this.zoom = 1
+          this.rotate = 0
+          this.imageStatus = 'natural'
+          this.initLocation()
+        }
       },
 
       visible (val) {
         if (val) {
+          this.currentIndex = this.defaultIndex
           // 注册鼠标滚轮事件
           if (document.addEventListener) {
             document.addEventListener('DOMMouseScroll', this.onMouseScroll)
           }   // W3C
           window.onmousewheel = document.onmousewheel = this.onMouseScroll   // IE/Opera/Chrome
+          // 注册全屏事件
+          document.addEventListener('fullscreenchange', this.fullscreenchange)
+          document.addEventListener('mozfullscreenchange', this.fullscreenchange)
+          document.addEventListener('webkitfullscreenchange', this.fullscreenchange)
+          document.addEventListener('msfullscreenchange', this.fullscreenchange)
 
           setTimeout(() => {
             this.loadImage()
-          }, 10)   // 优先加载 currentIndex 的图片
+          }, 5)   // 优先加载 currentIndex 图片
         } else {
           if (document.addEventListener) {
             document.removeEventListener('DOMMouseScroll', this.onMouseScroll)
           }
           window.onmousewheel = null
           document.onmousewheel = null
+          document.removeEventListener('fullscreenchange', this.fullscreenchange)
+          document.removeEventListener('mozfullscreenchange', this.fullscreenchange)
+          document.removeEventListener('webkitfullscreenchange', this.fullscreenchange)
+          document.removeEventListener('msfullscreenchange', this.fullscreenchange)
         }
       },
 
@@ -129,9 +136,6 @@
           this.showZoomPercent = false
         }, 1000)
       }
-    },
-    mounted () {
-      this.currentIndex = this.defaultIndex
     },
     methods: {
       // 加载图片
@@ -144,6 +148,7 @@
       },
 
       onMouseScroll (e) {
+        if (this.isFullScreen) return
         /*
          ** wheelDelta: IE/Opera/Chrome
          ** detail: Firefox
@@ -155,7 +160,17 @@
         }
       },
 
+      initLocation () {
+        this.mouseDown.x = 0
+        this.mouseDown.y = 0
+        this.mouseUp.x = 0
+        this.mouseUp.y = 0
+        this.mouseDrag.x = 0
+        this.mouseDrag.y = 0
+      },
+
       imageMousedown (e) {
+        if (this.isFullScreen) return
         this.imageTransition = 'none'
         this.mouseDown.x = e.clientX
         this.mouseDown.y = e.clientY
@@ -200,7 +215,7 @@
       },
 
       zoomIn () {
-        this.zoom = this.zoom >= 2 ? 2 : this.zoom + zoomRatio
+        this.zoom = this.zoom >= zoomMax ? zoomMax : this.zoom + zoomRatio
       },
 
       zoomOut () {
@@ -222,20 +237,33 @@
           this.imageStatus = 'natural'
           this.zoom = 1
         }
-        this.mouseDown.x = 0
-        this.mouseDown.y = 0
-        this.mouseUp.x = 0
-        this.mouseUp.y = 0
-        this.mouseDrag.x = 0
-        this.mouseDrag.y = 0
+        this.initLocation()
       },
 
       leftRotate () {
-        this.rotate += 90
+        this.rotate -= 90
       },
 
       rightRotate () {
-        this.rotate -= 90
+        this.rotate += 90
+      },
+
+      palyPPT () {
+        let docElm = this.$refs.imageViewerLayer
+        if (docElm.requestFullscreen) {   // W3C
+          docElm.requestFullscreen()
+        } else if (docElm.mozRequestFullScreen) {   // FireFox
+          docElm.mozRequestFullScreen()
+        } else if (docElm.webkitRequestFullScreen) {   // Chrome等
+          docElm.webkitRequestFullScreen()
+        } else if (docElm.msRequestFullscreen) {   // IE11
+          docElm.msRequestFullscreen()
+        }
+      },
+
+      fullscreenchange () {
+        this.isFullScreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement
+        console.log(this.isFullScreen)
       }
     }
   }
@@ -255,12 +283,6 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, .5);
-    position: relative;
-  }
-
-  .imageViewer {
-    width: 100%;
-    height: 100%;
     position: relative;
   }
 
@@ -320,7 +342,7 @@
   }
 
   .handleBar .button:hover {
-    background: rgba(0, 0, 0, .85);
+    background: rgba(0, 0, 0, .7);
     transform: scale(1.1);
   }
 
@@ -377,10 +399,9 @@
   }
 
   .closeButton {
-    width: 15px;
-    height: 15px;
-    background: #505050;
-    border: 20px solid #505050;
+    width: 0;
+    height: 0;
+    border: 30px solid rgba(0, 0 ,0, .5);
     border-top-width: 10px;
     border-right-width: 10px;
     border-bottom-left-radius: 100%;
@@ -404,7 +425,7 @@
     height: 16px;
     background: rgba(255, 255, 255, .5);
     border-radius: 1px;
-    transform: rotate(-45deg);
+    transform: rotate(-45deg) translate(-8px, 0px);
   }
 
   .closeButton em::after {

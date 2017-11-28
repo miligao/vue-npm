@@ -12,7 +12,7 @@
     <button @click="imgViewerVisible = true">点我预览图片</button>
     <ImageViewer
       :images="images"
-      :defaultIndex="11"
+      :defaultIndex="4"
       :visible.sync="imgViewerVisible"
     >
     </ImageViewer>
