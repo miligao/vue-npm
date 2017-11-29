@@ -13,9 +13,11 @@
             ref="imageContainer"
             @mousedown.prevent="imageMousedown"
           >
+            <div class="loading" v-if="imagesSize[currentIndex] && !imagesSize[currentIndex].onload"></div>
             <img
+              v-if="imagesSize[currentIndex] && imagesSize[currentIndex].onload"
+              :src="imagesSize[currentIndex].url"
               :style="imageStyle"
-              :src="images[currentIndex]"
               class="image"
               ref="image"
               alt="图片"
@@ -29,8 +31,9 @@
         <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
         <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
         <div class="handleBar" v-show="!isFullScreen">
-          <div class="button" @click="zoomAuto" :title="imageStatus === 'natural' ? '适应窗口' : '实际尺寸'">
-            <img :src="imageStatus === 'natural' ? require('./assets/zoom_adapt.png') : require('./assets/zoom_natural.png')" alt="自适应">
+          <div class="button" @click="zoomAuto" :title="zoomType === 'natural' ? '适应窗口' : '实际尺寸'">
+            <img v-show="zoomType === 'natural'" :src="require('./assets/zoom_adapt.png')" alt="适应窗口">
+            <img v-show="zoomType === 'adapt'" :src="require('./assets/zoom_natural.png')" alt="实际尺寸">
           </div>
           <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
           <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
@@ -65,19 +68,21 @@
     },
     data () {
       return {
-        currentIndex: this.defaultIndex,
+        currentIndex: void 0,
         zoom: 1,
         rotate: 0,
         listName: 'list-init',
         imageTransition: 'transform .2s',
-        imageStatus: 'natural',   // natural/adapt
+        zoomType: 'natural',   // natural/adapt
         imagesSize: [],
         mouseDown: { x: 0, y: 0 },
         mouseUp: { x: 0, y: 0 },
         mouseDrag: { x: 0, y: 0 },
         showZoomPercent: false,
         isFullScreen: false,
-        showBigButton: ''
+        showBigButton: '',
+        zoomAdapt: require('./assets/zoom_adapt.png'),
+        zoomNatural: require('./assets/zoom_natural.png')
       }
     },
     computed: {
@@ -89,13 +94,16 @@
       }
     },
     watch: {
-      currentIndex (val) {
-        this.initParms()
+      imagesSize (val) {
+        val.map((ele, index) => {
+          if (index === this.currentIndex && ele.onload) this.initParms()   // 匹配到当前项，初始化参数，并计算zoom及zoom类型
+        })
       },
 
       visible (val) {
         if (val) {
-          this.loadImage()   // 加载全部图片
+          this.currentIndex = this.defaultIndex
+          this.loadImages()
           // 注册鼠标滚轮事件
           if (document.addEventListener) {
             document.addEventListener('DOMMouseScroll', this.onMouseScroll)
@@ -111,7 +119,7 @@
           // 注册鼠标移动事件
           document.addEventListener('mousemove', this.mousemove)
         } else {
-          this.currentIndex = this.defaultIndex
+          this.listName = 'list-init'
           if (document.addEventListener) {
             document.removeEventListener('DOMMouseScroll', this.onMouseScroll)
           }
@@ -135,19 +143,27 @@
       }
     },
     methods: {
-      loadImage () {
-        let currentImg = new Image()
-        currentImg.src = this.images[this.currentIndex]
+      loadImages () {
+        this.imagesSize = []
+        this.imagesSize.splice(this.defaultIndex, 0, { url: this.images[this.defaultIndex], onload: false, w: 400, h: 400 })
+        let img = new Image()
+        img.onload = (e) => {
+          this.imagesSize.splice(this.defaultIndex, 1, { url: this.images[this.defaultIndex], img: img, onload: true, w: e.target.width, h: e.target.height })
+        }
+        img.src = this.images[this.defaultIndex]
+        img.style.display = 'none'
+        document.body.appendChild(img)
+        // 加载全部图片
         this.images.map((ele, index) => {
+          this.imagesSize.push({ url: ele, onload: false, w: 400, h: 400 })
           let img = new Image()
           img.onload = (e) => {
-            this.imagesSize[index] = { w: e.target.width, h: e.target.height }
+            this.imagesSize.splice(index, 1, { url: ele, onload: true, w: e.target.width, h: e.target.height })
           }
           img.src = ele
+          img.style.display = 'none'
+          document.body.appendChild(img)
         })
-        setTimeout(() => {
-          this.initParms()
-        }, 60)
       },
 
       onMouseScroll (e) {
@@ -194,6 +210,7 @@
         } else {
           this.currentIndex++
         }
+        this.initParms()
       },
 
       prev () {
@@ -203,6 +220,7 @@
         } else {
           this.currentIndex--
         }
+        this.initParms()
       },
 
       zoomIn () {
@@ -214,8 +232,8 @@
       },
 
       zoomAuto () {
-        if (this.imageStatus === 'natural') {
-          this.imageStatus = 'adapt'
+        if (this.zoomType === 'natural') {
+          this.zoomType = 'adapt'
           let { width: imgW, height: imgH } = this.$refs.image
           let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
           if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比 和 容器宽高比
@@ -224,7 +242,7 @@
             this.zoom = viewW / imgW
           }
         } else {
-          this.imageStatus = 'natural'
+          this.zoomType = 'natural'
           this.zoom = 1
         }
         this.initLocation()
@@ -250,14 +268,14 @@
         let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
         if (imgW <= viewW && imgH <= viewH) {
           this.zoom = 1
-          this.imageStatus = 'natural'   // 原始尺寸
+          this.zoomType = 'natural'   // 原始尺寸
         } else {
           if (imgW / imgH <= viewW / viewH) {   // 图片的宽高比 和 容器宽高比
             this.zoom = viewH / imgH
           } else {
             this.zoom = viewW / imgW
           }
-          this.imageStatus = 'adapt'   // 适应窗口
+          this.zoomType = 'adapt'   // 适应窗口
         }
       },
 
@@ -382,6 +400,25 @@
 
   .imageContainer.imageFullScreen {
     cursor: none;
+  }
+
+  .imageContainer .loading {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border-radius: 50%;
+    border: 2px solid;
+    border-color: rgba(255, 255, 255, .9) transparent;
+    animation: loading 2s infinite;
+  }
+
+  @keyframes loading {
+    50% {
+      transform: rotate(360deg) scale(1.3);
+    }
+    100% {
+      transform: rotate(0deg) scale(1);
+    }
   }
 
   .imageContainer .image {
@@ -540,6 +577,7 @@
     background: rgba(0, 0, 0, .5);
     color: rgba(255, 255, 255, .9);
     font-size: 14px;
+    user-select: none;
   }
 
   .closeButton {
