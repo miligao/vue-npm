@@ -3,50 +3,61 @@
  -->
 
 <template lang="html">
-  <transition name="imageViewer">
-    <section class="imageViewerMask" v-if="visible">
-      <div class="imageViewerLayer" ref="imageViewerLayer">
-        <transition :name="listName">
-          <div
-            :class="['imageContainer', { imageFullScreen: isFullScreen }]"
-            :key="'imageBox' + currentIndex"
-            ref="imageContainer"
-            @mousedown.prevent="imageMousedown"
-          >
-            <div class="loading" v-if="imagesSize[currentIndex] && !imagesSize[currentIndex].onload"></div>
-            <img
-              v-if="imagesSize[currentIndex] && imagesSize[currentIndex].onload"
-              :src="imagesSize[currentIndex].url"
-              :style="imageStyle"
-              class="image"
-              ref="image"
-              alt="图片"
-            />
+  <section>
+    <transition name="imageViewer">
+      <div class="imageViewerMask" v-if="visible">
+        <div class="imageViewerLayer" ref="imageViewerLayer">
+          <transition :name="listName">
+            <div
+              :class="['imageContainer', { imageFullScreen: isFullScreen }]"
+              :key="'imageBox' + currentIndex"
+              ref="imageContainer"
+              @mousedown.prevent="imageMousedown"
+            >
+              <div class="loading" v-if="imagesInfo[currentIndex] && !imagesInfo[currentIndex].onload"></div>
+              <img
+                v-if="imagesInfo[currentIndex] && imagesInfo[currentIndex].onload"
+                :src="imagesInfo[currentIndex].url"
+                :style="imageStyle"
+                class="image"
+                ref="image"
+                alt="图片"
+              />
+            </div>
+          </transition>
+          <transition-group name="bigButton">
+            <div class="prevButtonBox" @click="prev" v-show="showBigButton === 'prev'" key="bigButtonPrev">
+              <slot name="prevButton">
+                <div class="prevButton"></div>
+              </slot>
+            </div>
+            <div class="nextButtonBox" @click="next" v-show="showBigButton === 'next'" key="bigButtonNext">
+              <slot name="nextButton">
+                <div class="nextButton"></div>
+              </slot>
+            </div>
+          </transition-group>
+          <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
+          <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
+          <div class="handleBar" v-show="showHandleBar && !isFullScreen">
+            <div class="button" @click="zoomAuto" :title="zoomType === 'natural' ? '适应窗口' : '实际尺寸'">
+              <img v-show="zoomType === 'natural'" :src="require('./assets/zoom_adapt.png')" alt="适应窗口">
+              <img v-show="zoomType === 'adapt'" :src="require('./assets/zoom_natural.png')" alt="实际尺寸">
+            </div>
+            <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
+            <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
+            <div class="button prev" @click="prev"><div class="arrow"></div></div>
+            <div class="button next" @click="next"><div class="arrow"></div></div>
+            <div class="button" @click="leftRotate"><img src="./assets/left_rotate.png" alt="左旋"></div>
+            <div class="button" @click="rightRotate"><img src="./assets/right_rotate.png" alt="右旋"></div>
+            <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
           </div>
-        </transition>
-        <transition-group name="bigButton">
-            <div class="prevButton" v-show="showBigButton === 'prev'" key="bigButtonPrev" @click="prev"></div>
-            <div class="nextButton" v-show="showBigButton === 'next'" key="bigButtonNext" @click="next"></div>
-        </transition-group>
-        <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
-        <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
-        <div class="handleBar" v-show="!isFullScreen">
-          <div class="button" @click="zoomAuto" :title="zoomType === 'natural' ? '适应窗口' : '实际尺寸'">
-            <img v-show="zoomType === 'natural'" :src="require('./assets/zoom_adapt.png')" alt="适应窗口">
-            <img v-show="zoomType === 'adapt'" :src="require('./assets/zoom_natural.png')" alt="实际尺寸">
-          </div>
-          <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
-          <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
-          <div class="button prev" @click="prev"><div class="arrow"></div></div>
-          <div class="button next" @click="next"><div class="arrow"></div></div>
-          <div class="button" @click="leftRotate"><img src="./assets/left_rotate.png" alt="左旋"></div>
-          <div class="button" @click="rightRotate"><img src="./assets/right_rotate.png" alt="右旋"></div>
-          <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
+          <div v-show="!isFullScreen" class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
         </div>
-        <div v-show="!isFullScreen" class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
       </div>
-    </section>
-  </transition>
+    </transition>
+    <div class="imagesCache"></div>
+  </section>
 </template>
 
 <script>
@@ -64,7 +75,11 @@
         type: Number,
         default: 0
       },
-      visible: Boolean
+      visible: Boolean,
+      showHandleBar: {
+        type: Boolean,
+        default: true
+      }
     },
     data () {
       return {
@@ -74,29 +89,31 @@
         listName: 'list-init',
         imageTransition: 'transform .2s',
         zoomType: 'natural',   // natural/adapt
-        imagesSize: [],
+        imagesInfo: [],
         mouseDown: { x: 0, y: 0 },
         mouseUp: { x: 0, y: 0 },
         mouseDrag: { x: 0, y: 0 },
         showZoomPercent: false,
         isFullScreen: false,
-        showBigButton: '',
-        zoomAdapt: require('./assets/zoom_adapt.png'),
-        zoomNatural: require('./assets/zoom_natural.png')
+        showBigButton: ''
       }
     },
     computed: {
       imageStyle () {
         return {
+          // width: `${this.imagesInfo[this.currentIndex].w}px`,   // 兼容IE img宽度被压缩
+          minWidth: `${this.imagesInfo[this.currentIndex].w}px`,   // 兼容Firefox弹性盒子img的width超出父级，Firefox自动压缩到父级的width，height则不会
           transform: `translate(${this.mouseDrag.x}px, ${this.mouseDrag.y}px) scale(${this.zoom}) rotate(${this.rotate}deg)`,
           transition: this.imageTransition
         }
       }
     },
     watch: {
-      imagesSize (val) {
+      imagesInfo (val) {
         val.map((ele, index) => {
-          if (index === this.currentIndex && ele.onload) this.initParms()   // 匹配到当前项，初始化参数，并计算zoom及zoom类型
+          if (index === this.currentIndex && ele.onload) {
+            this.initParms()
+          }   // 匹配到当前项，初始化参数，并计算zoom及zoom类型
         })
       },
 
@@ -139,30 +156,26 @@
         this.showZoomPercent = true
         setTimeout(() => {
           this.showZoomPercent = false
-        }, 1000)
+        }, 1500)
       }
     },
     methods: {
       loadImages () {
-        this.imagesSize = []
-        this.imagesSize.splice(this.defaultIndex, 0, { url: this.images[this.defaultIndex], onload: false, w: 400, h: 400 })
+        this.imagesInfo = []
+        document.querySelector('.imagesCache').innerHTML = null
+        // 优先加载当前项
         let img = new Image()
-        img.onload = (e) => {
-          this.imagesSize.splice(this.defaultIndex, 1, { url: this.images[this.defaultIndex], img: img, onload: true, w: e.target.width, h: e.target.height })
-        }
-        img.src = this.images[this.defaultIndex]
-        img.style.display = 'none'
-        document.body.appendChild(img)
+        img.src = this.images[this.currentIndex]
         // 加载全部图片
         this.images.map((ele, index) => {
-          this.imagesSize.push({ url: ele, onload: false, w: 400, h: 400 })
+          this.imagesInfo.push({ url: ele, onload: false, w: 400, h: 400 })
           let img = new Image()
           img.onload = (e) => {
-            this.imagesSize.splice(index, 1, { url: ele, onload: true, w: e.target.width, h: e.target.height })
+            console.log(index, e.target.width, e.target.height)
+            this.imagesInfo.splice(index, 1, { url: ele, onload: true, w: e.target.width, h: e.target.height })
           }
           img.src = ele
-          img.style.display = 'none'
-          document.body.appendChild(img)
+          document.querySelector('.imagesCache').appendChild(img)   // 缓存图片
         })
       },
 
@@ -264,7 +277,7 @@
       },
 
       computedZoom () {
-        let { w: imgW, h: imgH } = this.imagesSize[this.currentIndex]
+        let { w: imgW, h: imgH } = this.imagesInfo[this.currentIndex]
         let { offsetWidth: viewW, offsetHeight: viewH } = this.$refs.imageContainer
         if (imgW <= viewW && imgH <= viewH) {
           this.zoom = 1
@@ -290,6 +303,7 @@
       },
 
       palyPPT () {
+        // 全屏事件
         let docElm = this.$refs.imageViewerLayer
         if (docElm.requestFullscreen) {   // W3C
           docElm.requestFullscreen()
@@ -302,8 +316,10 @@
         }
       },
 
-      fullscreenchange () {
-        this.isFullScreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement
+      fullscreenchange (e) {
+        console.log(e)
+        this.isFullScreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement
+        console.log(this.isFullScreen)
         if (this.isFullScreen) {
           setTimeout(() => {
             this.initParms()
@@ -353,7 +369,7 @@
 
       mousemove (e) {
         if (this.isFullScreen) return
-        let maxW = this.$refs.imageContainer ? this.$refs.imageContainer.offsetWidth : 1920
+        let maxW = this.$refs.imageContainer ? this.$refs.imageContainer.offsetWidth : window.screen.width
         if (e.clientX <= 200) {
           this.showBigButton = 'prev'
         } else if (e.clientX >= maxW - 200) {
@@ -367,6 +383,10 @@
 </script>
 
 <style spaced>
+  .imagesCache {
+    display: none;
+  }
+
   .imageViewerMask {
     position: fixed;
     top: 0;
@@ -464,7 +484,7 @@
   }
 
   .handleBar .button img {
-    width: 18px;
+    width: 16px;
   }
 
   .handleBar .button.next .arrow {
@@ -501,12 +521,21 @@
     font-size: 14px;
   }
 
-  .prevButton,
-  .nextButton {
+  .prevButtonBox,
+  .nextButtonBox {
     position: absolute;
     top: 50%;
     left: 2%;
     transform: translateY(-50%);
+  }
+
+  .nextButtonBox {
+    left: auto;
+    right: 2%;
+  }
+
+  .prevButton,
+  .nextButton {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -517,11 +546,6 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 0 4px rgba(0, 0, 0, .5);
-  }
-
-  .nextButton {
-    left: auto;
-    right: 2%;
   }
 
   .nextButton::before,
@@ -657,6 +681,6 @@
   }
 
   .bigButton-leave-active {
-    transition: opacity 1.5s;
+    transition: opacity 1s;
   }
 </style>
