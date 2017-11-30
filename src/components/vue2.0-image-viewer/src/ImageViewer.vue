@@ -39,21 +39,24 @@
           </transition-group>
           <div class="zoomPercent" v-show="!isFullScreen && showZoomPercent">{{ Math.ceil(zoom * 100) + '%' }}</div>
           <div class="pointBar">{{ currentIndex + 1 }} / {{ images.length }}</div>
-          <div class="handleBar" v-show="showHandleBar && !isFullScreen">
-            <div class="button" @click="zoomAuto" :title="zoomType === 'natural' ? '适应窗口' : '实际尺寸'">
-              <img v-show="zoomType === 'natural'" :src="require('./assets/zoom_adapt.png')" alt="适应窗口">
-              <img v-show="zoomType === 'adapt'" :src="require('./assets/zoom_natural.png')" alt="实际尺寸">
-            </div>
-            <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
-            <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
-            <div class="button prev" @click="prev"><div class="arrow"></div></div>
-            <div class="button next" @click="next"><div class="arrow"></div></div>
-            <div class="button" @click="leftRotate"><img src="./assets/left_rotate.png" alt="左旋"></div>
-            <div class="button" @click="rightRotate"><img src="./assets/right_rotate.png" alt="右旋"></div>
-            <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
+          <div class="handleBarBox" v-show="showHandleBar && !isFullScreen">
+            <slot name="handleBar">
+              <div class="handleBar">
+                <div class="button" @click="zoomAuto" :title="zoomType === 'natural' ? '适应窗口' : '实际尺寸'">
+                  <img v-show="zoomType === 'natural'" :src="require('./assets/zoom_adapt.png')" alt="适应窗口">
+                  <img v-show="zoomType === 'adapt'" :src="require('./assets/zoom_natural.png')" alt="实际尺寸">
+                </div>
+                <div class="button" @click="zoomIn"><img src="./assets/zoom_in.png" alt="放大"></div>
+                <div class="button" @click="zoomOut"><img src="./assets/zoom_out.png" alt="缩小"></div>
+                <div class="button prev" @click="prev"><div class="arrow"></div></div>
+                <div class="button next" @click="next"><div class="arrow"></div></div>
+                <div class="button" @click="leftRotate"><img src="./assets/left_rotate.png" alt="左旋"></div>
+                <div class="button" @click="rightRotate"><img src="./assets/right_rotate.png" alt="右旋"></div>
+                <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
+              </div>
+            </slot>
           </div>
           <div v-show="!isFullScreen" class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
-          <slot></slot>
         </div>
       </div>
     </transition>
@@ -76,7 +79,10 @@
         type: Number,
         default: 0
       },
-      visible: Boolean,
+      visible: {
+        type: Boolean,
+        default: false
+      },
       showHandleBar: {
         type: Boolean,
         default: true
@@ -447,11 +453,14 @@
     user-select: none;
   }
 
-  .handleBar {
+  .handleBarBox {
     position: absolute;
     left: 50%;
     bottom: 10px;
     transform: translateX(-50%);
+  }
+
+  .handleBar {
     height: 50px;
     padding: 0 10px;
     border-radius: 25px;
