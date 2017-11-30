@@ -53,6 +53,7 @@
             <div class="button" @click="palyPPT"><img src="./assets/paly.png" alt="幻灯片"></div>
           </div>
           <div v-show="!isFullScreen" class="closeButton" @click="$emit('update:visible', false)"><em></em></div>
+          <slot></slot>
         </div>
       </div>
     </transition>

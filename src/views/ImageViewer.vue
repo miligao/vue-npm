@@ -14,7 +14,6 @@
       :images="images"
       :defaultIndex="defaultIndex"
       :visible.sync="imgViewerVisible"
-      :showHandleBar="false"
     >
     </ImageViewer>
   </div>
