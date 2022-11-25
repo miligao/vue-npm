@@ -1,4 +1,4 @@
-# vue2.0-image-viewer
+# vue3.0-image-viewer
 > vue图片查看器
 
 ## Install
