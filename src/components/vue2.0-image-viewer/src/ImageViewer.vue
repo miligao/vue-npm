@@ -66,12 +66,12 @@
                 >
                   <img
                     v-show="zoomType === 'natural'"
-                    :src="require('./assets/zoom_adapt.png')"
+                    src="./assets/zoom_adapt.png"
                     alt="适应窗口"
                   />
                   <img
                     v-show="zoomType === 'adapt'"
-                    :src="require('./assets/zoom_natural.png')"
+                    src="./assets/zoom_natural.png"
                     alt="实际尺寸"
                   />
                 </div>
@@ -96,6 +96,9 @@
                 <div class="button" @click="palyPPT">
                   <img src="./assets/paly.png" alt="幻灯片" />
                 </div>
+                <div class="button" @click="onDownload">
+                  <img src="./assets/download.png" alt="下载" />
+                </div>
               </div>
             </slot>
           </div>
@@ -104,19 +107,16 @@
             class="closeButton"
             @click="$emit('update:visible', false)"
           >
-            <em></em>
+            <em />
           </div>
         </div>
       </div>
     </transition>
-    <div class="imagesCache"></div>
+    <div class="imagesCache" />
   </section>
 </template>
 
 <script>
-let zoomRatio = 0.02; // 缩放比率
-let zoomMax = 4; // 最大放大倍数
-
 export default {
   name: "imageViewer",
   props: {
@@ -136,10 +136,24 @@ export default {
       type: Boolean,
       default: true,
     },
+    // 最大放大倍数
+    zoomMax: {
+      type: Number,
+      default: 3,
+    },
+    // 缩放比率
+    zoomRatio: {
+      type: Number,
+      default: 0.02,
+    },
+    autoPlayInterval: {
+      type: Number,
+      default: 4000,
+    },
   },
   data() {
     return {
-      currentIndex: void 0,
+      currentIndex: 0,
       zoom: 1,
       rotate: 0,
       listName: "list-init",
@@ -174,6 +188,10 @@ export default {
     },
 
     visible(val) {
+      if (!this.images.length || this.defaultIndex > this.images.length - 1) {
+        this.$emit("update:visible", false);
+        return;
+      }
       if (val) {
         this.currentIndex = this.defaultIndex;
         this.loadImages();
@@ -234,12 +252,12 @@ export default {
       // 优先加载当前项
       let img = new Image();
       img.src = this.images[this.currentIndex];
+
       // 加载全部图片
       this.images.map((ele, index) => {
         this.imagesInfo.push({ url: ele, onload: false, w: 400, h: 400 });
         let img = new Image();
         img.onload = (e) => {
-          console.log(index, e.target.width, e.target.height);
           this.imagesInfo.splice(index, 1, {
             url: ele,
             onload: true,
@@ -325,11 +343,12 @@ export default {
     },
 
     zoomIn() {
-      this.zoom = this.zoom >= zoomMax ? zoomMax : this.zoom + zoomRatio;
+      this.zoom =
+        this.zoom >= this.zoomMax ? this.zoomMax : this.zoom + this.zoomRatio;
     },
 
     zoomOut() {
-      this.zoom = this.zoom <= 0.04 ? 0.04 : this.zoom - zoomRatio;
+      this.zoom = this.zoom <= 0.04 ? 0.04 : this.zoom - this.zoomRatio;
     },
 
     zoomAuto() {
@@ -412,19 +431,22 @@ export default {
       }
     },
 
+    onDownload() {
+      const { url } = this.imagesInfo[this.currentIndex];
+      this.$emit("onDownload", url);
+    },
+
     fullscreenchange(e) {
-      console.log(e);
       this.isFullScreen =
         document.fullscreenElement ||
         document.mozFullScreenElement ||
         document.webkitFullscreenElement ||
         document.msFullscreenElement;
-      console.log(this.isFullScreen);
       if (this.isFullScreen) {
-        setTimeout(() => {
+        this.$nextTick(() => {
           this.initParms();
-        }, 60); // 全屏事件DOM还未发生改变
-        this.setTimer();
+          this.setTimer();
+        });
       } else {
         this.initParms();
         this.clearTimer();
@@ -434,7 +456,7 @@ export default {
     setTimer() {
       this.timer = setInterval(() => {
         this.next();
-      }, 3000);
+      }, this.autoPlayInterval);
     },
 
     clearTimer() {
@@ -749,13 +771,13 @@ export default {
   transform: rotate(90deg);
 }
 
-.list-next-enter,
+.list-next-enter-from,
 .list-prev-leave-to {
   transform: translateX(100%);
 }
 
 .list-next-leave-to,
-.list-prev-enter {
+.list-prev-enter-from {
   transform: translateX(-100%);
 }
 
@@ -766,7 +788,7 @@ export default {
   transition: transform 0.4s;
 }
 
-.imageViewer-enter,
+.imageViewer-enter-from,
 .imageViewer-leave-to {
   opacity: 0;
 }
@@ -776,7 +798,7 @@ export default {
   transition: opacity 0.4s;
 }
 
-.bigButton-enter,
+.bigButton-enter-from,
 .bigButton-leave-to {
   opacity: 0;
 }
