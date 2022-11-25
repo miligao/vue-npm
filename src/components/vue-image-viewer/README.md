@@ -3,15 +3,16 @@
 
 ## Install
 ```shell
-yarn add vue2.0-image-viewer
+yarn add vue3.0-image-viewer
 ```
 
 ## Usage
 ```javascript
-import Vue from 'vue'
-import ImageViewer from 'vue2.0-image-viewer'
+import { createApp } from "vue";
+import App from './App.vue'
+import ImageViewer from 'vue3.0-image-viewer'
 
-Vue.use(ImageViewer)
+createApp(App).use(ImageViewer).mount('#app');
 ```
 
 ### Attributes
@@ -19,8 +20,9 @@ Vue.use(ImageViewer)
  -----|-----|-----|-----|-----
  images | 图片url数组 | Array | - | -
  defaultIndex | 默认开始图片的索引，从 0 开始 | Number | - | 0
- visible | 是否显示ImageViewer，要用.sync 修饰 | Boolean | - | false
+ v-model:visible | 是否显示ImageViewer | Boolean | - | false
  showHandleBar | 是否显示操作栏 | Boolean | - | true
+ zoomMax | 最大放大倍数 | Number | - | 3
 
 ### Slot
  参数 | 说明

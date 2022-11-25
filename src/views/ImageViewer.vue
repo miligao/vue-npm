@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import ImageViewer from "../components/vue2.0-image-viewer";
+import ImageViewer from "../components/vue-image-viewer";
 
 export default {
   name: "image",

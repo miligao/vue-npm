@@ -1,17 +1,19 @@
 {
-  "name": "vue2.0-image-viewer",
-  "version": "1.0.1",
+  "name": "vue3.0-image-viewer",
+  "version": "1.0.2",
   "description": "vue图片查看器",
   "main": "index.js",
+  "private": false,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gyjddtang/vue-npm/tree/master/src/components/vue2.0-image-viewer"
+    "url": "https://github.com/miligao/vue-npm/tree/master/src/components/vue3.0-image-viewer"
   },
   "keywords": [
     "vue",
+    "vue3.0",
     "image",
     "viewer"
   ],
