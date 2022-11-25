@@ -1,9 +1,4 @@
-
-<!--
-  - Created by MiliGao on 2017/11/16
- -->
-
-<template lang="html">
+<template>
   <div>
     <h2>Welcome to MiliGao's Vue Component npm.js</h2>
     <ul class="npmList">
@@ -16,13 +11,13 @@
 </template>
 
 <script>
-  export default {
-    name: 'index'
-  }
+export default {
+  name: "index",
+};
 </script>
 
 <style>
-  .npmList {
-    list-style: none;
-  }
+.npmList {
+  list-style: none;
+}
 </style>

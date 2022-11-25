@@ -2,7 +2,7 @@
   - Created by Mili on 2017/8/24
  -->
 
-<template lang="html">
+<template>
   <ul>
     <li v-for="n in 6">
       <Popover
@@ -19,44 +19,44 @@
 </template>
 
 <script>
-  import Popover from '../components/vue-popover/index'
+import Popover from "../components/vue-popover/index";
 
-  export default {
-    name: 'popover',
-    components: {
-      Popover
+export default {
+  name: "popover",
+  components: {
+    Popover,
+  },
+  methods: {
+    delComfirm() {
+      console.log("delete");
     },
-    methods: {
-      delComfirm () {
-        console.log('delete')
-      }
-    }
-  }
+  },
+};
 </script>
 
 <style>
-  ul {
-    padding: 50px 200px;
-  }
+ul {
+  padding: 50px 200px;
+}
 
-  ul li {
-    list-style: none;
-    margin-bottom: 10px;
-    height: 30px;
-    width: 40px;
-  }
+ul li {
+  list-style: none;
+  margin-bottom: 10px;
+  height: 30px;
+  width: 40px;
+}
 
-  li .pop {
-    /*float: right;*/
-    /*margin-right: 50%;*/
-  }
+li .pop {
+  /*float: right;*/
+  /*margin-right: 50%;*/
+}
 
-  li .pop .image {
-    width: 800px;
-    display: block;
-  }
+li .pop .image {
+  width: 800px;
+  display: block;
+}
 
-  li .pop .deleteBt {
-    text-decoration: none;
-  }
+li .pop .deleteBt {
+  text-decoration: none;
+}
 </style>

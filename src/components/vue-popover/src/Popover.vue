@@ -2,7 +2,7 @@
   - Created by MiliGao on 2017/8/23
  -->
 
-<template lang="html">
+<template>
   <div :class="['popover', popoverClass]" @mouseenter="handleEvent" @mouseleave="handleEvent">
     <transition name="popover" mode="out-in">
       <div class="poplayer" :data-placement="placement" v-show="visible">

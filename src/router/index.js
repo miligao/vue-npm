@@ -1,39 +1,39 @@
-import Vue from 'vue'
-import Router from 'vue-router'
-import Index from '../views/Index'
-import Transfer from '../views/Transfer'
-import Popover from '../views/Popover'
-import Clip from '../views/Clip.vue'
-import ImageViewer from '../views/ImageViewer'
+import { createRouter, createWebHistory } from "vue-router";
 
-Vue.use(Router)
+const routes = [
+  {
+    path: "/",
+    name: "Index",
+    component: () => import(/* webpackChunkName: "Home" */ "@/views/Index.vue"),
+  },
+  {
+    path: "/transfer",
+    name: "Transfer",
+    component: () =>
+      import(/* webpackChunkName: "Transfer" */ "@/views/Transfer.vue"),
+  },
+  {
+    path: "/popover",
+    name: "Popover",
+    component: () =>
+      import(/* webpackChunkName: "Popover" */ "@/views/Popover.vue"),
+  },
+  {
+    path: "/clip",
+    name: "Clip",
+    component: () => import(/* webpackChunkName: "Clip" */ "@/views/Clip.vue"),
+  },
+  {
+    path: "/viewer",
+    name: "ImageViewer",
+    component: () =>
+      import(/* webpackChunkName: "ImageViewer" */ "@/views/ImageViewer.vue"),
+  },
+];
 
-export default new Router({
-  routes: [
-    {
-      path: '/',
-      name: 'Index',
-      component: Index
-    },
-    {
-      path: '/transfer',
-      name: 'Transfer',
-      component: Transfer
-    },
-    {
-      path: '/popover',
-      name: 'Popover',
-      component: Popover
-    },
-    {
-      path: '/clip',
-      name: 'Clip',
-      component: Clip
-    },
-    {
-      path: '/viewer',
-      name: 'ImageViewer',
-      component: ImageViewer
-    }
-  ]
-})
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+export default router;
